@@ -34,9 +34,13 @@ public class DatabaseConfig {
     @Bean
     @Primary
     public DataSource dataSource() {
-        String url = datasourceUrl;
+        // Prioritize external DATABASE_URL if present (e.g. Render/Heroku PostgreSQL)
+        String url = databaseUrl;
         if (url == null || url.isBlank()) {
-            url = databaseUrl;
+            url = System.getenv("DATABASE_URL");
+        }
+        if (url == null || url.isBlank()) {
+            url = datasourceUrl;
         }
 
         // If no URL provided at all, fallback to H2 in-memory
@@ -59,6 +63,7 @@ public class DatabaseConfig {
                 int port = uri.getPort() > 0 ? uri.getPort() : 5432;
                 String path = uri.getPath(); // e.g. /dbname
                 String userInfo = uri.getUserInfo();
+                String query = uri.getQuery();
 
                 String parsedUser = username;
                 String parsedPass = password;
@@ -69,6 +74,9 @@ public class DatabaseConfig {
                 }
 
                 String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path;
+                if (query != null && !query.isBlank()) {
+                    jdbcUrl += "?" + query;
+                }
                 log.info("Configured PostgreSQL datasource from URI for host: {}, database: {}", host, path);
                 return DataSourceBuilder.create()
                     .driverClassName("org.postgresql.Driver")
