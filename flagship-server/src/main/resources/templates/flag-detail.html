@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Flag: ' + ${flag.key})}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('flags')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <!-- Header & Breadcrumb -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    <li class="breadcrumb-item"><a th:href="@{/flags(project=${currentProject}, env=${currentEnv})}" class="text-secondary">Flags</a></li>
+                    <li class="breadcrumb-item active text-white" aria-current="page" th:text="${flag.key}">flag-key</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-3">
+                <h3 class="fw-bold mb-0" th:text="${flag.name}">bKash One-Click Checkout</h3>
+                <span class="badge bg-dark border border-secondary text-info" th:text="${flag.type}">BOOLEAN</span>
+                <span th:if="${config.enabled}" class="badge bg-success bg-opacity-25 text-success border border-success">
+                    <i class="bi bi-check-circle-fill me-1"></i> ACTIVE
+                </span>
+                <span th:unless="${config.enabled}" class="badge bg-danger bg-opacity-25 text-danger border border-danger">
+                    <i class="bi bi-power me-1"></i> KILLED / DISABLED
+                </span>
+            </div>
+            <p class="text-secondary small mt-1 mb-0" th:text="${flag.description}">Description</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <!-- FR1 & FR2 Kill Switch Button (Functional) -->
+            <form th:action="@{'/flags/' + ${flag.key} + '/toggle-ui'}" method="post" class="m-0">
+                <input type="hidden" name="project" th:value="${currentProject}">
+                <input type="hidden" name="env" th:value="${currentEnv}">
+                <input type="hidden" name="enabled" th:value="${!config.enabled}">
+                <input type="hidden" name="reason" th:value="${config.enabled ? 'Emergency Kill-Switch triggered from Admin UI' : 'Re-enabled flag from Admin UI'}">
+                <button type="submit" th:if="${config.enabled}" class="btn kill-switch-btn btn-sm px-3 py-2">
+                    <i class="bi bi-power me-1"></i> INSTANT KILL SWITCH
+                </button>
+                <button type="submit" th:unless="${config.enabled}" class="btn btn-success btn-sm px-3 py-2">
+                    <i class="bi bi-play-circle-fill me-1"></i> RE-ENABLE FLAG
+                </button>
+            </form>
+
+            <a th:href="@{'/experiments?flag=' + ${flag.key} + '&project=' + ${currentProject} + '&env=' + ${currentEnv}}" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-bar-chart"></i> Experiments
+            </a>
+        </div>
+    </div>
+
+    <!-- Targeting Engine & Rollout Form (FR2, FR3) -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <form th:action="@{'/flags/' + ${flag.key} + '/update-targeting'}" method="post">
+                <input type="hidden" name="project" th:value="${currentProject}">
+                <input type="hidden" name="env" th:value="${currentEnv}">
+
+                <!-- Card 1: Percentage Rollout (FR3 Sticky Rollouts) -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-sliders me-2 text-primary"></i>Percentage Rollout (Sticky Assignment)</span>
+                        <span class="badge bg-primary" id="rolloutBadge" th:text="${config.rolloutPercentage} + '%'">20%</span>
+                    </div>
+                    <div class="card-body">
+                        <label for="rolloutRange" class="form-label text-secondary small fw-bold">Traffic Allocation (0% to 100%)</label>
+                        <input type="range" class="form-range" min="0" max="100" step="1"
+                               id="rolloutRange" name="rolloutPercentage" th:value="${config.rolloutPercentage}"
+                               oninput="document.getElementById('rolloutBadge').innerText = this.value + '%'; document.getElementById('rolloutNum').value = this.value;">
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="text-secondary small">0% (All Off)</span>
+                            <div class="input-group input-group-sm" style="width: 110px;">
+                                <input type="number" id="rolloutNum" class="form-control text-center" min="0" max="100"
+                                       th:value="${config.rolloutPercentage}"
+                                       oninput="document.getElementById('rolloutRange').value = this.value; document.getElementById('rolloutBadge').innerText = this.value + '%';">
+                                <span class="input-group-text bg-dark border-secondary text-secondary">%</span>
+                            </div>
+                            <span class="text-secondary small">100% (Fully Released)</span>
+                        </div>
+                        <div class="alert alert-dark border-secondary mt-3 p-2 small text-secondary">
+                            <i class="bi bi-info-circle text-info me-1"></i>
+                            <strong>Sticky Guarantee:</strong> MurmurHash3 algorithm ensures any user allocated in the current cohort (<span th:text="${config.rolloutPercentage}">20</span>%) remains in that variation when rollout is increased.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Variations & Defaults (FR1) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-palette me-2 text-info"></i>Environment Default Variations
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small fw-bold">Default Variation (Served when no rule matches)</label>
+                                <input type="text" name="defaultVariation" class="form-control" th:value="${config.defaultVariation}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small fw-bold">Off Variation (Served when Kill-Switch is active)</label>
+                                <input type="text" name="offVariation" class="form-control" th:value="${config.offVariation}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Individual User Targeting (FR2 Step 2) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-person-lines-fill me-2 text-warning"></i>Individual User Targeting (Evaluation Order: Step 2)
+                    </div>
+                    <div class="card-body">
+                        <label class="form-label text-secondary small fw-bold">Individual Targets JSON (Map of Variation -> List of User IDs)</label>
+                        <textarea name="individualTargetsJson" class="form-control font-monospace small" rows="3"
+                                  th:text="${config.individualTargetsJson}">{"on":["nayem1541","vip-user-1"]}</textarea>
+                        <small class="text-muted">Example: <code>{"on": ["user_123", "user_456"], "off": ["blocked_user"]}</code></small>
+                    </div>
+                </div>
+
+                <!-- Card 4: Segment Targeting Rules (FR2 Step 3) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-diagram-3 me-2 text-success"></i>Segment Rules (Evaluation Order: Step 3)
+                    </div>
+                    <div class="card-body">
+                        <label class="form-label text-secondary small fw-bold">Rules AST Tree JSON (Composite Pattern with Operators)</label>
+                        <textarea name="rulesJson" class="form-control font-monospace small" rows="5"
+                                  th:text="${config.rulesJson}">[]</textarea>
+                        <small class="text-muted">Supports operators: <code>EQUALS, NOT_EQUALS, IN, CONTAINS, REGEX, SEMVER_GREATER_THAN, SEMVER_LESS_THAN, DATE_BEFORE, DATE_AFTER</code></small>
+                    </div>
+                </div>
+
+                <!-- Card 5: Change Control / Audit (FR7) -->
+                <div class="card mb-4 border-primary">
+                    <div class="card-header bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-shield-lock-fill me-2"></i>Change Authorization & Audit Justification
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small fw-bold">Change Reason (Required for Audit Trail)</label>
+                            <input type="text" name="changeReason" class="form-control" placeholder="e.g. Ramp up rollout to 30% after verifying error rates in Datadog" required>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span th:if="${currentEnv == 'production'}" class="text-warning small">
+                                <i class="bi bi-exclamation-triangle me-1"></i> Changes in <strong>Production</strong> trigger a 2-person approval request if you are not ADMIN.
+                            </span>
+                            <span th:unless="${currentEnv == 'production'}" class="text-muted small">
+                                Changes in <span th:text="${currentEnv}">dev</span> apply immediately without approval.
+                            </span>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> Save Configuration
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar Info Column -->
+        <div class="col-lg-4">
+            <!-- Flag Metadata Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>Flag Metadata
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-secondary d-block">Flag Key</small>
+                        <code class="text-primary" th:text="${flag.key}">key</code>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-secondary d-block">Owner</small>
+                        <span class="text-white fw-semibold" th:text="${flag.owner}">team-payments</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-secondary d-block">Environment Config Version</small>
+                        <span class="badge bg-dark border border-secondary text-info" th:text="'v' + ${config.currentVersion}">v1</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-secondary d-block">Last Evaluated Timestamp</small>
+                        <span th:if="${flag.lastEvaluatedAt != null}" class="text-white small" th:text="${#temporals.format(flag.lastEvaluatedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-11-18</span>
+                        <span th:if="${flag.lastEvaluatedAt == null}" class="badge bg-secondary">Never</span>
+                    </div>
+                    <div>
+                        <small class="text-secondary d-block">Created At</small>
+                        <span class="text-muted small" th:text="${#temporals.format(flag.createdAt, 'yyyy-MM-dd')}">2026-11-18</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Version History & 1-Action Rollback (FR7) -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history me-2 text-warning"></i>Version History</span>
+                    <span class="badge bg-secondary" th:text="${#lists.size(versions)} + ' saved'">1</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush bg-transparent">
+                        <div th:each="v : ${versions}" class="list-group-item bg-transparent text-light border-secondary p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div>
+                                    <span class="badge bg-dark border border-secondary text-info me-1" th:text="'v' + ${v.versionNumber}">v1</span>
+                                    <strong class="small text-white" th:text="${v.changeReason}">Initial</strong>
+                                </div>
+                                <form th:if="${v.versionNumber != config.currentVersion}" th:action="@{/audit/rollback}" method="post" class="m-0">
+                                    <input type="hidden" name="flagKey" th:value="${flag.key}">
+                                    <input type="hidden" name="targetVersion" th:value="${v.versionNumber}">
+                                    <input type="hidden" name="project" th:value="${currentProject}">
+                                    <input type="hidden" name="env" th:value="${currentEnv}">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning py-0 px-2"
+                                            onclick="return confirm('Rollback to version ' + this.form.targetVersion.value + '?');">
+                                        Rollback
+                                    </button>
+                                </form>
+                                <span th:if="${v.versionNumber == config.currentVersion}" class="badge bg-success">Current</span>
+                            </div>
+                            <div class="text-muted small d-flex justify-content-between">
+                                <span><i class="bi bi-person me-1"></i><span th:text="${v.changeAuthor}">admin</span></span>
+                                <span th:text="${#temporals.format(v.createdAt, 'MM-dd HH:mm')}">11-18 10:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scheduled Changes Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-calendar-event me-2 text-info"></i>Scheduled Releases</span>
+                    <span class="badge bg-info text-dark" th:text="${#lists.size(scheduledChanges)} + ' scheduled'">0</span>
+                </div>
+                <div class="card-body p-3">
+                    <form th:action="@{'/flags/' + ${flag.key} + '/schedule-ui'}" method="post" class="mb-3">
+                        <input type="hidden" name="project" th:value="${currentProject}">
+                        <input type="hidden" name="env" th:value="${currentEnv}">
+                        <div class="mb-2">
+                            <label class="form-label text-secondary small fw-bold">Target Rollout %</label>
+                            <input type="number" name="rolloutPercentage" class="form-control form-control-sm" min="0" max="100" value="50" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label text-secondary small fw-bold">Schedule UTC Time (ISO-8601)</label>
+                            <input type="text" name="scheduledTime" class="form-control form-control-sm font-monospace" placeholder="2026-12-01T00:00:00Z" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label text-secondary small fw-bold">Reason</label>
+                            <input type="text" name="reason" class="form-control form-control-sm" placeholder="Gradual holiday release" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-info btn-sm w-100">
+                            <i class="bi bi-alarm me-1"></i> Schedule Release
+                        </button>
+                    </form>
+                    <div class="list-group list-group-flush bg-transparent">
+                        <div th:each="sc : ${scheduledChanges}" class="list-group-item bg-transparent text-light border-secondary p-2 small">
+                            <div class="d-flex justify-content-between">
+                                <span th:if="${sc.executed}" class="badge bg-secondary">Executed</span>
+                                <span th:unless="${sc.executed}" class="badge bg-warning text-dark">Pending</span>
+                                <span class="text-secondary" th:text="${#temporals.format(sc.scheduledTime, 'yyyy-MM-dd HH:mm')}">2026-12-01</span>
+                            </div>
+                            <div class="text-white mt-1" th:text="${sc.flagKey}">flag</div>
+                            <div class="text-muted small" th:text="${sc.changePayloadJson}">payload</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

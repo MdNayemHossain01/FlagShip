@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Audit Log & Rollback')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('audit')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Audit Log & Rollback Control</h3>
+            <p class="text-secondary small mb-0">Immutable version history with one-action instant rollback (FR7 Change Control)</p>
+        </div>
+        <span class="badge bg-secondary px-3 py-2">
+            <i class="bi bi-shield-lock me-1"></i> Full Audit Trail
+        </span>
+    </div>
+
+    <!-- Audit Versions Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-clock-history me-2 text-warning"></i>Historical Configuration Snapshots</span>
+            <small class="text-secondary">Track who changed what, why, and when</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ver</th>
+                            <th>Flag Key</th>
+                            <th>Environment</th>
+                            <th>Author</th>
+                            <th>Change Justification</th>
+                            <th>Timestamp</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="v : ${versions}">
+                            <td><span class="badge bg-dark border border-secondary text-info fw-bold" th:text="'v' + ${v.versionNumber}">v1</span></td>
+                            <td><code class="text-primary fw-bold" th:text="${v.flagKey}">bkash-checkout</code></td>
+                            <td>
+                                <span class="badge" th:classappend="${v.environmentKey == 'production' ? 'badge-env-prod' : 'badge-env-dev'}"
+                                      th:text="${v.environmentKey}">production</span>
+                            </td>
+                            <td><i class="bi bi-person me-1 text-secondary"></i><span class="text-white" th:text="${v.changeAuthor}">admin</span></td>
+                            <td class="text-secondary" th:text="${v.changeReason}">Initial release</td>
+                            <td class="small text-muted" th:text="${#temporals.format(v.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2026-11-18</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-info"
+                                            th:data-version="${v.versionNumber}"
+                                            th:data-snapshot="${v.snapshotJson}"
+                                            onclick="inspectSnapshot(this.getAttribute('data-version'), this.getAttribute('data-snapshot'))">
+                                        <i class="bi bi-eye"></i> Snapshot
+                                    </button>
+                                    <form th:action="@{/audit/rollback}" method="post" class="d-inline m-0">
+                                        <input type="hidden" name="flagKey" th:value="${v.flagKey}">
+                                        <input type="hidden" name="targetVersion" th:value="${v.versionNumber}">
+                                        <input type="hidden" name="project" th:value="${v.projectKey}">
+                                        <input type="hidden" name="env" th:value="${v.environmentKey}">
+                                        <button type="submit" class="btn btn-warning"
+                                                onclick="return confirm('WARNING: Are you sure you want to rollback flag ' + this.form.flagKey.value + ' to version ' + this.form.targetVersion.value + '? This will immediately broadcast the rollback to all connected clients.');">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Rollback
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snapshot Viewer Modal -->
+    <div class="modal fade" id="snapshotModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="background-color: #1e293b; border: 1px solid #334155;">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-code-slash text-info me-2"></i>Version Snapshot Payload</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="snapshotJsonPre" class="p-3 bg-dark text-info rounded border border-secondary font-monospace" style="max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+
+<script>
+    function inspectSnapshot(ver, rawJson) {
+        try {
+            const parsed = JSON.parse(rawJson);
+            document.getElementById('snapshotJsonPre').innerText = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+            document.getElementById('snapshotJsonPre').innerText = rawJson;
+        }
+        new bootstrap.Modal(document.getElementById('snapshotModal')).show();
+    }
+</script>
+</body>
+</html>

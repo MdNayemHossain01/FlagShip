@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Flag Hygiene & Stale Detection')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('hygiene')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Flag Hygiene & Technical Debt Scanner</h3>
+            <p class="text-secondary small mb-0">Automated stale flag detection and codebase cleanup recommendations (FR9 Flag Hygiene)</p>
+        </div>
+        <span class="badge bg-danger px-3 py-2 fs-6">
+            <i class="bi bi-recycle me-1"></i> <span th:text="${staleFlagsCount}">1</span> Stale Flags Detected
+        </span>
+    </div>
+
+    <!-- Hygiene Criteria Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card p-3 border-danger border-opacity-50">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3 fs-3">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-white mb-1">Rule 1: Inactive / Abandoned Flags</h6>
+                        <p class="text-secondary small mb-0">Flags that have not recorded an evaluation in the last <strong>30 days</strong> or were created >30 days ago with zero evaluations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-3 border-warning border-opacity-50">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3 fs-3">
+                        <i class="bi bi-check2-all"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-white mb-1">Rule 2: Permanent 100% Rollouts</h6>
+                        <p class="text-secondary small mb-0">Flags that have been fully rolled out to <strong>100%</strong> of users for more than <strong>14 days</strong> and should be permanently hardcoded.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stale Flags Report Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>Stale Flags Requiring Action</span>
+            <small class="text-secondary">Scanned across all registered projects</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Flag Key & Name</th>
+                            <th>Project</th>
+                            <th>Owner</th>
+                            <th>Stale Detection Reason</th>
+                            <th>Recommendation</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="s : ${staleFlags}">
+                            <td>
+                                <div>
+                                    <code class="text-primary fw-bold" th:text="${s.flagKey}">legacy-api-v1-support</code>
+                                    <div class="text-secondary small" th:text="${s.flagName}">Legacy API v1</div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-dark border border-secondary" th:text="${s.projectKey}">default</span></td>
+                            <td><span class="badge bg-secondary" th:text="${s.owner}">platform-infra</span></td>
+                            <td>
+                                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger p-2" th:text="${s.staleReason}">
+                                    No evaluations in 35 days
+                                </span>
+                            </td>
+                            <td class="text-secondary small" th:text="${s.recommendation}">
+                                Archive flag and deprecate old endpoints
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{'/flags/' + ${s.flagKey} + '?project=' + ${s.projectKey} + '&env=production'}"
+                                   class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil-square"></i> Review
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${staleFlags == null or staleFlags.isEmpty()}">
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <i class="bi bi-emoji-smile text-success fs-1 d-block mb-2"></i>
+                                <span>Excellent hygiene! No stale flags found in the platform.</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

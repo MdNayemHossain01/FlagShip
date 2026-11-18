@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: flagship-demo-app
+
+flagship:
+  server-url: http://localhost:8080
+  project-key: default
+  environment: production
+  api-key: fs_live_demo_key
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,flagship

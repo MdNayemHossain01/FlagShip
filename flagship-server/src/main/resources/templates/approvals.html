@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Production Approvals')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('approvals')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Production Approvals</h3>
+            <p class="text-secondary small mb-0">Two-person release authorization for production feature flags (FR7 Change Control)</p>
+        </div>
+        <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+            <i class="bi bi-shield-exclamation me-1"></i> <span th:text="${pendingApprovalsCount}">0</span> Pending Review
+        </span>
+    </div>
+
+    <!-- Pending Approvals Card -->
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning bg-opacity-10 text-warning d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-hourglass-split me-2"></i>Pending Approval Requests</span>
+            <small class="text-secondary">Requires APPROVER or ADMIN role</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Flag Key</th>
+                            <th>Environment</th>
+                            <th>Author</th>
+                            <th>Justification / Reason</th>
+                            <th>Requested At</th>
+                            <th class="text-end">Decision Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="req : ${pendingApprovals}">
+                            <td><span class="badge bg-dark border border-secondary" th:text="'#' + ${req.id}">#1</span></td>
+                            <td><code class="text-primary fw-bold" th:text="${req.flagKey}">bkash-checkout</code></td>
+                            <td>
+                                <span class="badge badge-env-prod" th:text="${req.environmentKey}">production</span>
+                            </td>
+                            <td><i class="bi bi-person me-1 text-secondary"></i><span class="text-white" th:text="${req.author}">editor</span></td>
+                            <td class="text-secondary" th:text="${req.reason}">Ramping up rollout</td>
+                            <td class="small text-muted" th:text="${#temporals.format(req.requestedAt, 'yyyy-MM-dd HH:mm')}">2026-11-18</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-info"
+                                            th:data-req-id="${req.id}"
+                                            th:data-config="${req.targetConfigJson}"
+                                            onclick="showChangesModal(this.getAttribute('data-req-id'), this.getAttribute('data-config'))">
+                                        <i class="bi bi-eye"></i> Diff
+                                    </button>
+                                    <button type="button" class="btn btn-success"
+                                            th:data-req-id="${req.id}"
+                                            onclick="decideRequest(this.getAttribute('data-req-id'), 'APPROVE')">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </button>
+                                    <button type="button" class="btn btn-danger"
+                                            th:data-req-id="${req.id}"
+                                            onclick="decideRequest(this.getAttribute('data-req-id'), 'REJECT')">
+                                        <i class="bi bi-x-lg"></i> Reject
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${pendingApprovals == null or pendingApprovals.isEmpty()}">
+                            <td colspan="7" class="text-center py-5 text-secondary">
+                                <i class="bi bi-shield-check text-success fs-1 d-block mb-2"></i>
+                                <span>All changes approved. No pending production authorization requests.</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval History Card -->
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-journal-text me-2 text-primary"></i>Historical Approval Log
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Flag</th>
+                            <th>Status</th>
+                            <th>Author</th>
+                            <th>Approver</th>
+                            <th>Review Comment</th>
+                            <th>Reviewed At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="a : ${allApprovals}">
+                            <td><span class="text-secondary" th:text="'#' + ${a.id}">#1</span></td>
+                            <td><code class="text-primary" th:text="${a.flagKey}">key</code></td>
+                            <td>
+                                <span th:if="${a.status.name() == 'APPROVED'}" class="badge bg-success">APPROVED</span>
+                                <span th:if="${a.status.name() == 'REJECTED'}" class="badge bg-danger">REJECTED</span>
+                                <span th:if="${a.status.name() == 'PENDING'}" class="badge bg-warning text-dark">PENDING</span>
+                            </td>
+                            <td th:text="${a.author}">editor</td>
+                            <td>
+                                <span th:if="${a.approver != null}"><i class="bi bi-person-check me-1 text-success"></i><span th:text="${a.approver}">approver</span></span>
+                                <span th:if="${a.approver == null}" class="text-muted">—</span>
+                            </td>
+                            <td class="text-secondary small" th:text="${a.reviewComment}">Verified release notes</td>
+                            <td class="small text-muted">
+                                <span th:if="${a.reviewedAt != null}" th:text="${#temporals.format(a.reviewedAt, 'yyyy-MM-dd HH:mm')}">2026-11-18</span>
+                                <span th:if="${a.reviewedAt == null}">—</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diff Viewer Modal -->
+    <div class="modal fade" id="diffModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="background-color: #1e293b; border: 1px solid #334155;">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-diff text-info me-2"></i>Requested Configuration Diff</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="diffJsonViewer" class="p-3 bg-dark text-info rounded border border-secondary font-monospace" style="max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+
+<script th:inline="javascript">
+    function showChangesModal(id, rawJson) {
+        try {
+            const parsed = JSON.parse(rawJson);
+            document.getElementById('diffJsonViewer').innerText = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+            document.getElementById('diffJsonViewer').innerText = rawJson;
+        }
+        new bootstrap.Modal(document.getElementById('diffModal')).show();
+    }
+
+    async function decideRequest(id, decision) {
+        const comment = prompt('Enter review comment for ' + decision + ':', decision === 'APPROVE' ? 'Approved production change' : 'Changes require more testing');
+        if (comment === null) return;
+
+        try {
+            const res = await fetch('/api/v1/admin/approvals/' + id + '/decision?decision=' + decision + '&comment=' + encodeURIComponent(comment), {
+                method: 'POST'
+            });
+            if (res.ok) {
+                location.reload();
+            } else {
+                const data = await res.json();
+                alert('Error: ' + (data.error || 'Two-person rule violation or unauthorized.'));
+            }
+        } catch (err) {
+            alert('Request failed: ' + err.message);
+        }
+    }
+</script>
+</body>
+</html>

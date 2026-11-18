@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Users & Roles')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('users')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Users & Role-Based Access Control (RBAC)</h3>
+            <p class="text-secondary small mb-0">Role enforcement and user permission governance (FR10 Admin Web Application)</p>
+        </div>
+        <span class="badge bg-secondary px-3 py-2">
+            <i class="bi bi-shield-lock me-1"></i> Spring Security Active
+        </span>
+    </div>
+
+    <!-- Users Table Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-people-fill me-2 text-primary"></i>Platform User Directory
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${usersList}">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 bg-dark rounded-circle text-primary">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    <div>
+                                        <strong class="text-white d-block" th:text="${u.fullName}">Admin User</strong>
+                                        <span class="text-secondary small" th:text="${u.username}">admin</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-secondary" th:text="${u.email}">admin@flagship.io</td>
+                            <td>
+                                <span class="badge" th:classappend="'badge-role-' + ${#strings.toLowerCase(u.role.name())}"
+                                      th:text="${u.role.name()}">ADMIN</span>
+                            </td>
+                            <td>
+                                <span th:if="${u.enabled}" class="badge bg-success bg-opacity-25 text-success border border-success">ACTIVE</span>
+                                <span th:unless="${u.enabled}" class="badge bg-secondary">DISABLED</span>
+                            </td>
+                            <td class="small text-muted" th:text="${#temporals.format(u.createdAt, 'yyyy-MM-dd')}">2026-11-18</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RBAC Permission Matrix Card -->
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-grid-3x3-gap-fill me-2 text-info"></i>Role Permission Matrix
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0 text-center">
+                    <thead>
+                        <tr>
+                            <th class="text-start">Capability / Action</th>
+                            <th>VIEWER</th>
+                            <th>EDITOR</th>
+                            <th>APPROVER</th>
+                            <th>ADMIN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-start text-white">View Flags & Dashboard</td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="text-start text-white">Create / Edit Flags in Dev & Staging</td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="text-start text-white">Submit Production Changes (Pending Approval)</td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="text-start text-white">Review & Approve Production Changes (2-Person Gate)</td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="text-start text-white">Direct Production Overrides & User Governance</td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-secondary"><i class="bi bi-x-circle"></i></td>
+                            <td class="text-success"><i class="bi bi-check-circle-fill"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Experiments & SRM')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('experiments')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">A/B Testing & SRM Analysis</h3>
+            <p class="text-secondary small mb-0">Variation-level conversion reporting, Sample Ratio Mismatch (SRM) detection, and two-proportion Z-tests (FR8 Experiments)</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Flag Selector for Experiment -->
+            <div class="input-group input-group-sm" style="width: 280px;">
+                <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-funnel"></i></span>
+                <select class="form-select bg-dark text-white border-secondary"
+                        onchange="location.href='?flag=' + this.value + '&project=' + '[[${currentProject}]]' + '&env=' + '[[${currentEnv}]]'">
+                    <option th:each="f : ${flags}" th:value="${f.key}" th:text="${f.name} + ' (' + ${f.key} + ')'"
+                            th:selected="${f.key == selectedFlag}"></option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert / SRM Status Banner -->
+    <div th:if="${report.srm != null}" class="card mb-4"
+         th:classappend="${report.srm.srmDetected ? 'border-danger' : 'border-success'}">
+        <div class="card-body d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center gap-3">
+                <div th:if="${!report.srm.srmDetected}" class="p-3 bg-success bg-opacity-10 text-success rounded-circle">
+                    <i class="bi bi-shield-check fs-3"></i>
+                </div>
+                <div th:if="${report.srm.srmDetected}" class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle">
+                    <i class="bi bi-shield-slash-fill fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">
+                        Sample Ratio Mismatch (SRM) Status:
+                        <span th:if="${!report.srm.srmDetected}" class="text-success">HEALTHY TRAFFIC (No SRM Detected)</span>
+                        <span th:if="${report.srm.srmDetected}" class="text-danger">CRITICAL: SRM DETECTED (Biased Allocation)</span>
+                    </h5>
+                    <p class="text-secondary small mb-0" th:text="${report.srm.explanation}">SRM analysis details...</p>
+                </div>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-dark border border-secondary text-info d-block mb-1"
+                      th:text="'Chi-Square: ' + ${#numbers.formatDecimal(report.srm.chiSquare, 1, 2)}">Chi2: 0.0</span>
+                <span class="badge bg-dark border border-secondary text-secondary"
+                      th:text="'p-value: ' + ${#numbers.formatDecimal(report.srm.pValue, 1, 4)}">p: 1.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variation Metrics Table -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-table me-2 text-primary"></i>Variation-Level Performance for <code class="text-primary" th:text="${selectedFlag}">flag</code></span>
+            <button class="btn btn-sm btn-outline-primary" onclick="simulateTraffic()">
+                <i class="bi bi-lightning-charge me-1"></i> Simulate Live Traffic
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Variation</th>
+                            <th>Raw Exposures</th>
+                            <th>Unique Exposed Users</th>
+                            <th>Raw Conversions</th>
+                            <th>Converted Users</th>
+                            <th>Conversion Rate</th>
+                            <th>Total Goal Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="m : ${report.metrics}">
+                            <td>
+                                <span class="badge fs-6"
+                                      th:classappend="${m.variation == 'on' ? 'bg-primary' : 'bg-secondary'}"
+                                      th:text="${m.variation}">on</span>
+                            </td>
+                            <td th:text="${#numbers.formatInteger(m.rawExposures, 1, 'COMMA')}">500</td>
+                            <td><strong class="text-white" th:text="${#numbers.formatInteger(m.uniqueExposedUsers, 1, 'COMMA')}">500</strong></td>
+                            <td th:text="${#numbers.formatInteger(m.rawConversions, 1, 'COMMA')}">75</td>
+                            <td class="text-success fw-bold" th:text="${#numbers.formatInteger(m.uniqueConvertedUsers, 1, 'COMMA')}">75</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 8px; background-color: #0f172a; width: 100px;">
+                                        <div class="progress-bar bg-success" role="progressbar"
+                                             th:style="'width: ' + ${m.conversionRate * 100} + '%;'"></div>
+                                    </div>
+                                    <span class="fw-bold text-success" th:text="${#numbers.formatDecimal(m.conversionRate * 100, 1, 2)} + '%'">15.00%</span>
+                                </div>
+                            </td>
+                            <td class="text-info fw-semibold" th:text="'$' + ${#numbers.formatDecimal(m.totalGoalValue, 1, 2)}">$1,500.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistical Significance & Two-Proportion Z-Test -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-graph-up-arrow me-2 text-success"></i>Statistical Significance Test (Two-Proportion Z-Test)</span>
+                    <span th:if="${report.zTest != null and report.zTest.significant}" class="badge bg-success">SIGNIFICANT (p &lt; 0.05)</span>
+                    <span th:if="${report.zTest != null and !report.zTest.significant}" class="badge bg-secondary">NOT STATISTICALLY SIGNIFICANT</span>
+                </div>
+                <div class="card-body">
+                    <div th:if="${report.zTest != null}">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-4">
+                                <div class="p-3 bg-dark rounded border border-secondary text-center">
+                                    <small class="text-secondary d-block">Relative Uplift</small>
+                                    <h4 class="fw-bold my-1"
+                                        th:classappend="${report.zTest.relativeUpliftPercent >= 0 ? 'text-success' : 'text-danger'}"
+                                        th:text="${report.zTest.relativeUpliftPercent >= 0 ? '+' : ''} + ${#numbers.formatDecimal(report.zTest.relativeUpliftPercent, 1, 2)} + '%'">+50.00%</h4>
+                                    <small class="text-muted" th:text="${report.treatmentVariation} + ' vs ' + ${report.baselineVariation}">on vs off</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="p-3 bg-dark rounded border border-secondary text-center">
+                                    <small class="text-secondary d-block">Z-Score Statistic</small>
+                                    <h4 class="fw-bold my-1 text-info" th:text="${#numbers.formatDecimal(report.zTest.zScore, 1, 3)}">2.415</h4>
+                                    <small class="text-muted">Threshold |Z| &ge; 1.96</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="p-3 bg-dark rounded border border-secondary text-center">
+                                    <small class="text-secondary d-block">Two-Tailed p-Value</small>
+                                    <h4 class="fw-bold my-1"
+                                        th:classappend="${report.zTest.significant ? 'text-success' : 'text-warning'}"
+                                        th:text="${#numbers.formatDecimal(report.zTest.pValue, 1, 4)}">0.0157</h4>
+                                    <small class="text-muted">Alpha &alpha; = 0.05</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary mb-3">
+                            <strong class="d-block mb-1 text-white">95% Confidence Interval for Absolute Difference:</strong>
+                            <code class="text-warning">[<span th:text="${#numbers.formatDecimal(report.zTest.ciLower95 * 100, 1, 2)}">1.25</span>%, <span th:text="${#numbers.formatDecimal(report.zTest.ciUpper95 * 100, 1, 2)}">8.75</span>%]</code>
+                            <p class="text-secondary small mt-2 mb-0" th:text="${report.zTest.conclusion}"></p>
+                        </div>
+                    </div>
+                    <div th:if="${report.zTest == null}" class="text-center py-4 text-secondary">
+                        Insufficient variations to perform two-proportion Z-test.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assumptions & Limitations Documented Box (FR8 Requirement) -->
+        <div class="col-lg-5">
+            <div class="card h-100 border-info">
+                <div class="card-header bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-journal-bookmark-fill me-2"></i>Statistical Assumptions & Limitations
+                </div>
+                <div class="card-body small text-secondary">
+                    <h6 class="text-white fw-bold mb-2">Core Assumptions</h6>
+                    <ul class="mb-3 ps-3">
+                        <li><strong>Independent Observations:</strong> Each user exposure and subsequent conversion is assumed independent. Network effects or cross-device identity changes may bias results.</li>
+                        <li><strong>Large Sample Normal Approximation:</strong> The two-proportion Z-test relies on the Central Limit Theorem. Requires $n \cdot p \ge 5$ and $n(1 - p) \ge 5$ in each group.</li>
+                        <li><strong>Binomial Conversions:</strong> Each exposed user has a binary outcome (converted vs not converted).</li>
+                    </ul>
+
+                    <h6 class="text-white fw-bold mb-2">Limitations & Pitfalls</h6>
+                    <ul class="mb-0 ps-3">
+                        <li><strong>Peeking Problem:</strong> Continuously inspecting p-values before reaching planned sample size inflates False Positive Rate. Use fixed sample sizes.</li>
+                        <li><strong>Sample Ratio Mismatch:</strong> If SRM occurs (p &lt; 0.001), traffic assignment is broken (e.g. redirection latency or bot filtering). Do not make release decisions when SRM is present.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+
+<script th:inline="javascript">
+    async function simulateTraffic() {
+        const flag = /*[[${selectedFlag}]]*/ 'bkash-one-click-checkout';
+        const project = /*[[${currentProject}]]*/ 'default';
+        const env = /*[[${currentEnv}]]*/ 'production';
+
+        const count = prompt('How many users to simulate?', '200');
+        if (!count) return;
+
+        try {
+            const res = await fetch('/api/v1/admin/experiments/' + flag + '/simulate?project=' + project + '&env=' + env + '&usersCount=' + count, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert('Simulation failed.');
+            }
+        } catch (e) {
+            alert('Request error: ' + e.message);
+        }
+    }
+</script>
+</body>
+</html>

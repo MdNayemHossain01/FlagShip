@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Overview Dashboard')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+<main class="main-content">
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Platform Overview</h3>
+            <p class="text-secondary small mb-0">Real-time health, gradual rollouts, and audit trail for <span class="text-white fw-semibold" th:text="${currentProject}">default</span> / <span class="text-info fw-semibold" th:text="${currentEnv}">production</span></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/playground(project=${currentProject}, env=${currentEnv})}" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-terminal"></i> Rule Playground
+            </a>
+            <a th:href="@{/flags(project=${currentProject}, env=${currentEnv})}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Manage Flags
+            </a>
+        </div>
+    </div>
+
+    <!-- 8 Metric Cards required by Section 8 -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Projects -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Total Projects</span>
+                        <h2 class="fw-bold my-1" th:text="${totalProjects}">1</h2>
+                        <small class="text-muted">Multi-tenant isolated</small>
+                    </div>
+                    <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3">
+                        <i class="bi bi-folder2-open fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Total Flags -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Total Flags</span>
+                        <h2 class="fw-bold my-1 text-white" th:text="${totalFlags}">5</h2>
+                        <small class="text-muted">Boolean, String, Number, JSON</small>
+                    </div>
+                    <div class="p-3 bg-info bg-opacity-10 text-info rounded-3">
+                        <i class="bi bi-flag-fill fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Active Flags -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100 border-success border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Active Flags</span>
+                        <h2 class="fw-bold my-1 text-success" th:text="${activeFlags}">4</h2>
+                        <small class="text-success"><i class="bi bi-check-circle me-1"></i>Evaluating live</small>
+                    </div>
+                    <div class="p-3 bg-success bg-opacity-10 text-success rounded-3">
+                        <i class="bi bi-toggle2-on fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Disabled Flags -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100 border-danger border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Disabled Flags</span>
+                        <h2 class="fw-bold my-1 text-danger" th:text="${disabledFlags}">1</h2>
+                        <small class="text-danger"><i class="bi bi-slash-circle me-1"></i>Kill-switch engaged</small>
+                    </div>
+                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3">
+                        <i class="bi bi-power fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Percentage Rollouts -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100 border-primary border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Percentage Rollouts</span>
+                        <h2 class="fw-bold my-1 text-primary" th:text="${percentageRollouts}">2</h2>
+                        <small class="text-primary"><i class="bi bi-sliders me-1"></i>Sticky MurmurHash3</small>
+                    </div>
+                    <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3">
+                        <i class="bi bi-pie-chart-fill fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Pending Approvals -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100 border-warning border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Pending Approvals</span>
+                        <h2 class="fw-bold my-1 text-warning" th:text="${pendingApprovalsCount}">0</h2>
+                        <small class="text-warning"><i class="bi bi-shield-lock me-1"></i>2-Person production gates</small>
+                    </div>
+                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3">
+                        <i class="bi bi-shield-exclamation fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Stale Flags -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100 border-danger border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Stale Flags</span>
+                        <h2 class="fw-bold my-1 text-danger" th:text="${staleFlagsCount}">1</h2>
+                        <small class="text-danger"><i class="bi bi-recycle me-1"></i>>30d idle or >14d 100%</small>
+                    </div>
+                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3">
+                        <i class="bi bi-trash3-fill fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Connected SDKs -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card p-3 h-100 border-info border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-bold">Live SDK Streams</span>
+                        <h2 class="fw-bold my-1 text-info" th:text="${activeSdkClients}">0</h2>
+                        <small class="text-info"><i class="bi bi-broadcast me-1"></i>SSE zero-polling sync</small>
+                    </div>
+                    <div class="p-3 bg-info bg-opacity-10 text-info rounded-3">
+                        <i class="bi bi-router fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Live Status Row -->
+    <div class="row g-3 mb-4">
+        <!-- Interactive Chart -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-graph-up me-2 text-primary"></i>Flag Distribution & Rollout Status</span>
+                    <span class="badge bg-secondary">Live Metrics</span>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 280px;">
+                    <canvas id="flagsStatusChart" style="max-height: 240px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Architecture Snapshot & Resilience -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-hdd-network-fill me-2 text-success"></i>System Resilience & SDK Protocol
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Local Evaluation Latency</strong>
+                                <div class="text-secondary small">Evaluated directly in-memory in Spring Boot SDK</div>
+                            </div>
+                            <span class="badge bg-success">&lt; 10 µs (p99)</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Deterministic Bucketing</strong>
+                                <div class="text-secondary small">MurmurHash3 (32-bit x86) over flagKey:salt:userKey</div>
+                            </div>
+                            <span class="badge bg-primary">Identical in Server & SDK</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Offline Resilience</strong>
+                                <div class="text-secondary small">Disk snapshot fallback (.flagship/snapshot.json)</div>
+                            </div>
+                            <span class="badge bg-info">100% Offline Tolerant</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Bounded Server Timeout</strong>
+                                <div class="text-secondary small">Non-blocking startup timeout</div>
+                            </div>
+                            <span class="badge bg-secondary">Max 2000 ms</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Recent Changes Audit Table -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-clock-history me-2 text-warning"></i>Recent Changes & Audit Feed (FR7 Change Control)</span>
+            <a th:href="@{/audit(project=${currentProject}, env=${currentEnv})}" class="btn btn-outline-secondary btn-sm">Full Audit Trail</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ver</th>
+                            <th>Flag Key</th>
+                            <th>Environment</th>
+                            <th>Author</th>
+                            <th>Reason</th>
+                            <th>Timestamp</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="v : ${recentVersions}">
+                            <td><span class="badge bg-dark border border-secondary text-info" th:text="'v' + ${v.versionNumber}">v1</span></td>
+                            <td><code class="text-primary fw-bold" th:text="${v.flagKey}">bkash-checkout</code></td>
+                            <td>
+                                <span class="badge" th:classappend="${v.environmentKey == 'production' ? 'badge-env-prod' : 'badge-env-dev'}"
+                                      th:text="${v.environmentKey}">production</span>
+                            </td>
+                            <td><i class="bi bi-person me-1 text-secondary"></i><span th:text="${v.changeAuthor}">admin</span></td>
+                            <td class="text-secondary" th:text="${v.changeReason}">Initial rollout</td>
+                            <td class="small text-muted" th:text="${#temporals.format(v.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2026-11-18</td>
+                            <td class="text-end">
+                                <a th:href="@{'/flags/' + ${v.flagKey} + '?project=' + ${v.projectKey} + '&env=' + ${v.environmentKey}}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil-square"></i> Inspect
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${recentVersions == null or recentVersions.isEmpty()}">
+                            <td colspan="7" class="text-center py-4 text-secondary">No recent change records found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('flagsStatusChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active Flags', 'Kill-Switched / Off', 'Percentage Rollouts', 'Stale Flags'],
+                    datasets: [{
+                        data: [
+                            /*[[${activeFlags}]]*/ 4,
+                            /*[[${disabledFlags}]]*/ 1,
+                            /*[[${percentageRollouts}]]*/ 2,
+                            /*[[${staleFlagsCount}]]*/ 1
+                        ],
+                        backgroundColor: [
+                            '#10b981',
+                            '#ef4444',
+                            '#3b82f6',
+                            '#f59e0b'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#1e293b'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#94a3b8',
+                                padding: 16
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
