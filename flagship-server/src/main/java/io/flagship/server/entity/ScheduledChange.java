@@ -1,6 +1,8 @@
 package io.flagship.server.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 
 @Entity
@@ -26,7 +28,7 @@ public class ScheduledChange {
     @Column(nullable = false)
     private Instant scheduledTime;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(columnDefinition = "TEXT", nullable = false)
     private String changePayloadJson;
 
