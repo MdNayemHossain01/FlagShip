@@ -1,0 +1,30 @@
+# ==============================================================================
+# Render Blueprint — FlagShip Platform Deployment
+# Defines free-tier Docker Web Service and PostgreSQL database
+# ==============================================================================
+
+services:
+  - type: web
+    name: flagship-server
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flagship-db
+          property: connectionString
+      - key: FLAGSHIP_ADMIN_USERNAME
+        value: admin
+      - key: FLAGSHIP_ADMIN_PASSWORD
+        generateValue: true
+
+databases:
+  - name: flagship-db
+    plan: free
+    region: oregon

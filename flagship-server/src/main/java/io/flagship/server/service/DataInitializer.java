@@ -69,7 +69,13 @@ public class DataInitializer implements ApplicationRunner {
         log.info("Seeding initial FlagShip platform data...");
 
         // 1. Seed Users (ADMIN, APPROVER, EDITOR, VIEWER)
-        userRepo.save(new UserAccount("admin", passwordEncoder.encode("admin123"), "Lead Architect", "admin@flagship.io", Role.ADMIN));
+        String adminUser = System.getenv("FLAGSHIP_ADMIN_USERNAME");
+        if (adminUser == null || adminUser.isBlank()) adminUser = "admin";
+
+        String adminPass = System.getenv("FLAGSHIP_ADMIN_PASSWORD");
+        if (adminPass == null || adminPass.isBlank()) adminPass = "admin123";
+
+        userRepo.save(new UserAccount(adminUser, passwordEncoder.encode(adminPass), "Lead Architect", "admin@flagship.io", Role.ADMIN));
         userRepo.save(new UserAccount("approver", passwordEncoder.encode("approver123"), "Release Approver", "approver@flagship.io", Role.APPROVER));
         userRepo.save(new UserAccount("editor", passwordEncoder.encode("editor123"), "Senior Developer", "editor@flagship.io", Role.EDITOR));
         userRepo.save(new UserAccount("viewer", passwordEncoder.encode("viewer123"), "Product Observer", "viewer@flagship.io", Role.VIEWER));
