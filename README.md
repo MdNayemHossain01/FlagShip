@@ -1,10 +1,29 @@
 # FlagShip — Enterprise Feature-Flag & Gradual-Rollout Platform
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://flagship-server.onrender.com)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![Java Version](https://img.shields.io/badge/Java-21-blue.svg)]()
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)]()
+[![Database](https://img.shields.io/badge/Database-PostgreSQL%2016-blue.svg)]()
 [![Tests](https://img.shields.io/badge/tests-27%20passed-success.svg)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)]()
+
+> **Live Deployment:** FlagShip is live and publicly accessible at **[https://flagship-server.onrender.com](https://flagship-server.onrender.com)**.
+
+---
+
+## 🚀 Public Live Server & Demo Endpoints
+
+FlagShip is continuously deployed on **Render** backed by a dedicated **PostgreSQL** production database:
+
+| Component | Public URL / Endpoint | Description |
+|---|---|---|
+| **Admin Dashboard** | [https://flagship-server.onrender.com](https://flagship-server.onrender.com) | Full web UI for managing feature flags, targeting, rollouts, approvals, and analytics |
+| **Flags Console** | [https://flagship-server.onrender.com/flags?project=default&env=production](https://flagship-server.onrender.com/flags?project=default&env=production) | Real-time flags view and kill switch controls |
+| **Actuator Health** | [https://flagship-server.onrender.com/actuator/health](https://flagship-server.onrender.com/actuator/health) | System health check (`status: UP`, database: `PostgreSQL`) |
+| **SDK Snapshot API** | [https://flagship-server.onrender.com/api/v1/sdk/snapshot?project=default&env=production](https://flagship-server.onrender.com/api/v1/sdk/snapshot?project=default&env=production) | JSON configuration snapshot consumed by SDK clients |
+
+---
 
 **FlagShip** is a self-hosted, high-performance **Feature Flag and Gradual-Rollout Platform** featuring a **reusable Spring Boot 3 Starter** (`flagship-spring-boot-starter`), deterministic sticky percentage rollouts, an extensible AST targeting rule engine, two-person production release approvals, automated flag hygiene scanning, real-time SSE streaming, and complete offline resilience.
 
